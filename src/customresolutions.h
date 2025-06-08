@@ -1,0 +1,4 @@
+#ifndef CUSTOMRESOLUTIONS_H
+#define CUSTOMRESOLUTIONS_H
+
+#endif
