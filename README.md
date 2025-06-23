@@ -1,8 +1,8 @@
 # SGRandR
 
 > [!WARNING]
-> ## Project Moved to codeberg
-> ![Get in on codeberg](https://get-it-on.codeberg.org/get-it-on-white-on-black.png)
+> ## Project Moved to [codeberg](https://codeberg.org/itszariep/sgrandr)
+> [![Get in on Codeberg](https://get-it-on.codeberg.org/get-it-on-white-on-black.png)](https://codeberg.org/itszariep/sgrandr)
 
 ## Simple GTK Display settings
 
