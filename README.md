@@ -1,6 +1,10 @@
 # SGRandR
 
-Simple GTK Display settings
+> [!WARNING]
+> ## Project Moved to codeberg
+> ![Get in on codeberg](https://get-it-on.codeberg.org/get-it-on-white-on-black.png)
+
+## Simple GTK Display settings
 
 >[NOTE]
 > The wlroots backend is in progress, please be patient or use `nolibs` backend
