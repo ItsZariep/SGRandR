@@ -3,6 +3,13 @@
 gint testmode;
 gint nocsd;
 
+// custom resolution
+
+GtkWidget *customwidth;
+GtkWidget *customheight;
+GtkWidget *customrate;
+GtkWidget *customoutcombo;
+
 //logic data
 gchar **resolutions;
 gchar **rates;
@@ -50,22 +57,6 @@ GtkTreeModel *model;
 
 DisplayContext *ctx;
 
-void on_default_button_clicked(GtkButton *button, gpointer user_data) 
-{
-	(void)button;
-	(void)user_data;
-	gtk_range_set_value(GTK_RANGE(slider), 100);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(rescombo), 0);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(refcombo), 0);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(rotcombo), 0);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(scacombo), 0);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(outcombo), 0);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(offon), 0);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(outcombo2), 0);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(pos), 0);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(reflcombo), 0);
-	on_apply_button_clicked(GTK_BUTTON(defbtn), NULL);
-}
 //init locale
 int locale(void)
 {
@@ -79,8 +70,99 @@ void on_add_resolution_clicked(GtkMenuItem *menuitem, gpointer userdata)
 {
 	(void)userdata;
 	(void)menuitem;
-	g_custom_message("[ERROR]: ", "Not implemented");
+
+	GtkWidget *dialog = gtk_dialog_new();
+	gtk_window_set_title(GTK_WINDOW(dialog), _("Use a custom resolution"));
+	gtk_container_set_border_width(GTK_CONTAINER(dialog), 10);
+
+	GtkIconTheme *theme = gtk_icon_theme_get_default();
+	GtkIconInfo *info = gtk_icon_theme_lookup_icon(theme, "video-display", 48, 0);
+	if (info != NULL)
+	{
+		GdkPixbuf *icon = gtk_icon_info_load_icon(info, NULL);
+		gtk_window_set_icon(GTK_WINDOW(dialog), icon);
+		g_object_unref(icon);
+		g_object_unref(info);
+	}
+
+	GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+
+	accel_group = gtk_accel_group_new();
+		gtk_window_add_accel_group(GTK_WINDOW(dialog), accel_group);
+
+
+	// Create grid
+	GtkWidget *grid = gtk_grid_new();
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 5);
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 5);
+	gtk_grid_set_column_homogeneous(GTK_GRID(grid), TRUE);
+	gtk_container_add(GTK_CONTAINER(content_area), grid);
+
+	/// Widgets
+	GtkAdjustment *width_adj = gtk_adjustment_new(1920, 1, 99999, 1, 10, 0);
+	customwidth = gtk_spin_button_new(width_adj, 1, 0);
+
+	GtkAdjustment *height_adj = gtk_adjustment_new(1080, 1, 99999, 1, 10, 0);
+	customheight = gtk_spin_button_new(height_adj, 1, 0);
+
+	GtkAdjustment *rate_adj = gtk_adjustment_new(60, 1, 999, 1, 10, 0);
+	customrate = gtk_spin_button_new(rate_adj, 1, 0);
+
+
+	customoutcombo = gtk_combo_box_text_new();
+	GtkWidget *applybtn = gtk_button_new_with_label(_("Set custom resolution"));
+	GtkWidget *defaultbtn = gtk_button_new_with_label(_("Set default"));
+
+	outputs = get_outputs(ctx);
+	if (outputs == 0) { g_error("No Available outputs"); }
+	for (gint i = 0; outputs[i] != NULL; i++)
+	{
+		g_custom_message("[OUTPUTMANAGER]:", "Detected output: %s", outputs[i]);
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(customoutcombo), outputs[i]);
+		free(outputs[i]);
+	}
+	free(outputs);
+
+	GtkWidget *info_bar = gtk_info_bar_new();
+	gtk_info_bar_set_message_type(GTK_INFO_BAR(info_bar), GTK_MESSAGE_WARNING);
+	GtkWidget *info_label = gtk_label_new(_("WARNING: Using a custom resolution may cause unexpected results, like a black screen if unsupported by the display, or errors in the resolution list. You can restore default configuration with Ctrl+D"));
+		gtk_label_set_line_wrap(GTK_LABEL(info_label), TRUE);
+		gtk_label_set_line_wrap_mode(GTK_LABEL(info_label), PANGO_WRAP_WORD_CHAR);
+		gtk_widget_set_hexpand(info_label, TRUE);
+		gtk_widget_set_halign(info_label, GTK_ALIGN_FILL);
+
+	GtkWidget *content = gtk_info_bar_get_content_area(GTK_INFO_BAR(info_bar));
+	gtk_container_add(GTK_CONTAINER(content), info_label);
+	gtk_widget_show_all(info_bar);
+
+	gtk_combo_box_set_active(GTK_COMBO_BOX(customoutcombo), 0);
+	// Items Grid position
+	gtk_grid_attach(GTK_GRID(grid), gtk_label_new(_("Width:")), 0, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), customwidth, 1, 0, 1, 1);
+
+	gtk_grid_attach(GTK_GRID(grid), gtk_label_new(_("Height:")), 0, 1, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), customheight, 1, 1, 1, 1);
+
+	gtk_grid_attach(GTK_GRID(grid), gtk_label_new(_("Refresh Rate:")), 0, 2, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), customrate, 1, 2, 1, 1);
+
+	gtk_grid_attach(GTK_GRID(grid), gtk_label_new(_("Output:")), 0, 3, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), customoutcombo, 1, 3, 1, 1);
+
+	gtk_grid_attach(GTK_GRID(grid), applybtn, 1, 4, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), defaultbtn, 0, 4, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), info_bar,0, 5, 2, 1);
+
+	g_signal_connect(applybtn, "clicked", G_CALLBACK(on_customapply_clicked), customoutcombo);
+	g_signal_connect(defaultbtn, "clicked", G_CALLBACK(on_default_button_clicked), NULL);
+
+	gtk_widget_add_accelerator(defaultbtn, "activate", accel_group, GDK_KEY_D, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(applybtn, "activate", accel_group, GDK_KEY_Return, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+
+
+	gtk_widget_show_all(dialog);
 }
+
 
 void on_submenu_item2_toggled(GtkCheckMenuItem *menu_item,void *ptr, gpointer user_data) 
 {
@@ -145,8 +227,8 @@ gint load_outputs(void)
 		return 1;
 	}
 
-	const gchar *sessiontype = g_getenv("XDG_SESSION_TYPE");
 	#ifdef X11
+		const gchar *sessiontype = g_getenv("XDG_SESSION_TYPE");
 		gint opcode, event, error;
 		if (XQueryExtension(ctx->display, "XWAYLAND", &opcode, &event, &error) ||
 			g_strcmp0(sessiontype, "wayland") == 0)
@@ -157,9 +239,9 @@ gint load_outputs(void)
 		}
 	#endif
 
-
 	gint value = 0;
 	outputs = get_outputs(ctx);
+	if (outputs == 0) { g_error("No Available outputs"); }
 	for (gint i = 0; outputs[i] != NULL; i++)
 	{
 		g_custom_message("[OUTPUTMANAGER]:", "Detected output: %s", outputs[i]);
@@ -373,8 +455,6 @@ void update_ui(GtkWidget *dummy, gpointer data)
 		}
 	//}
 
-
-
 	gchar *displayname = get_output_name(ctx, current_output);
 	if (displayname)
 	{
@@ -386,6 +466,108 @@ void update_ui(GtkWidget *dummy, gpointer data)
 		g_custom_message("[ERROR]", "Monitor name not found.\n");
 		gtk_label_set_text(GTK_LABEL(displayname_label), "Unknown display");
 	}
+}
+
+void applygb(GtkWidget *widget, gpointer user_data)
+{
+	GtkAdjustment *gamma_adj = g_object_get_data(G_OBJECT(widget), "gamma_adj");
+	GtkAdjustment *brightness_adj = g_object_get_data(G_OBJECT(widget), "brightness_adj");
+
+	gdouble gamma = gtk_adjustment_get_value(gamma_adj);
+	gdouble brightness = gtk_adjustment_get_value(brightness_adj);
+
+	g_print("Applied Settings:\n");
+	g_print("Gamma: %.2f\n", gamma);
+	g_print("Brightness: %.2f\n", brightness);
+}
+
+
+void gammabrighness_dialog(GtkWidget *input, gpointer dummy)
+{
+	GtkWidget *dialog = gtk_dialog_new_with_buttons("Adjust Gamma and Brightness",
+		GTK_WINDOW(window),
+		GTK_DIALOG_MODAL,
+		"_OK", GTK_RESPONSE_OK,
+		"_Cancel", GTK_RESPONSE_CANCEL,
+		"_Apply", GTK_RESPONSE_APPLY,
+		NULL);
+
+	show_error_dialog("PLACEHOLDER, not implemented"); // REMOVE LATER
+	GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+	GtkWidget *grid = gtk_grid_new();
+	gtk_grid_set_row_spacing(GTK_GRID(grid), 10);
+	gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
+	gtk_grid_set_column_homogeneous(GTK_GRID(grid), TRUE);
+	gtk_container_set_border_width(GTK_CONTAINER(grid), 10);
+
+	GtkWidget *gamma_label = gtk_label_new("Gamma:");
+	GtkAdjustment *gamma_adj = gtk_adjustment_new(1.0, 0.1, 1.0, 0.1, 1.0, 0.0);
+	GtkWidget *gamma_slider = gtk_scale_new(GTK_ORIENTATION_HORIZONTAL, gamma_adj);
+	gtk_scale_set_digits(GTK_SCALE(gamma_slider), 2);
+
+	GtkWidget *brightness_label = gtk_label_new("Brightness:");
+	GtkAdjustment *brightness_adj = gtk_adjustment_new(0.0, -1.0, 1.0, 0.1, 0.1, 0.0);
+	GtkWidget *brightness_slider = gtk_scale_new(GTK_ORIENTATION_HORIZONTAL, brightness_adj);
+	gtk_scale_set_digits(GTK_SCALE(brightness_slider), 2);
+
+	gtk_grid_attach(GTK_GRID(grid), gamma_label, 0, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), gamma_slider, 1, 0, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), brightness_label, 0, 1, 1, 1);
+	gtk_grid_attach(GTK_GRID(grid), brightness_slider, 1, 1, 1, 1);
+
+	gtk_container_add(GTK_CONTAINER(content_area), grid);
+	gtk_widget_show_all(dialog);
+
+	g_object_set_data(G_OBJECT(dialog), "gamma_adj", gamma_adj);
+	g_object_set_data(G_OBJECT(dialog), "brightness_adj", brightness_adj);
+
+	gint response = gtk_dialog_run(GTK_DIALOG(dialog));
+
+	if (response == GTK_RESPONSE_OK || response == GTK_RESPONSE_APPLY)
+	{
+		applygb(dialog, NULL);
+	}
+
+	gtk_widget_destroy(dialog);
+}
+
+void on_default_button_clicked(GtkButton *button, gpointer user_data) 
+{
+	godefault = 1;
+	(void)button;
+	(void)user_data;
+	gtk_range_set_value(GTK_RANGE(slider), 100);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(rescombo), 0);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(refcombo), 0);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(rotcombo), 0);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(scacombo), 0);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(outcombo), 0);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(offon), 0);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(outcombo2), 0);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(pos), 0);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(reflcombo), 0);
+	on_apply_button_clicked(GTK_BUTTON(defbtn), NULL);
+
+	godefault = 0;
+
+	gchar *current_output = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(outcombo));
+		gchar *current_resolution = get_display_resolution(ctx, current_output);
+	g_custom_message("[OUTPUTMANAGER]:", "Current resolution: %s | %s", current_output, current_resolution);
+	
+	if (current_resolution)
+	{ 
+		combobox_match(GTK_COMBO_BOX_TEXT(rescombo), current_resolution);
+		g_free(current_resolution);
+	}
+
+	gchar *current_rate = get_display_rate(ctx, current_output);
+	if (current_rate)
+	{
+		g_custom_message("[OUTPUTMANAGER]:", "Current resolution: %s", current_rate);
+		combobox_match(GTK_COMBO_BOX_TEXT(refcombo), current_rate);
+		g_free(current_rate);
+	}
+
 }
 
 void create_window(void)
@@ -404,6 +586,7 @@ void create_window(void)
 	const gchar *translatedTitle = _("Display Settings");
 	gchar *formattedTitle = g_markup_printf_escaped(title, translatedTitle);
 	gtk_window_set_title(GTK_WINDOW(window), formattedTitle);
+	gtk_container_set_border_width(GTK_CONTAINER(window), 4);
 
 	g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 	g_free(formattedTitle);
@@ -432,25 +615,39 @@ void create_window(void)
 
 	GtkWidget *file_menu = gtk_menu_new();
 	gtk_menu_set_reserve_toggle_size(GTK_MENU(file_menu), FALSE);
+	GtkWidget *tools_menu = gtk_menu_new();
+	gtk_menu_set_reserve_toggle_size(GTK_MENU(tools_menu), FALSE);
 	GtkWidget *view_menu = gtk_menu_new();
 	gtk_menu_set_reserve_toggle_size(GTK_MENU(view_menu), FALSE);
 	GtkWidget *help_menu = gtk_menu_new();
 	gtk_menu_set_reserve_toggle_size(GTK_MENU(help_menu), FALSE);
 
 	GtkWidget *reload_item = gtk_menu_item_new_with_label(_("Reload Program"));
-	GtkWidget *add_resolution_item = gtk_menu_item_new_with_label(_("Add a custom resolution"));
+	GtkWidget *exit_item = gtk_menu_item_new_with_label(_("Quit"));
+
+
+
+	GtkWidget *gammabrightness_item = gtk_menu_item_new_with_label(_("Set Gamma/Brightness"));
+	GtkWidget *add_resolution_item = gtk_menu_item_new_with_label(_("Use a custom resolution"));
 	GtkWidget *save_config_item = gtk_menu_item_new_with_label(_("Save current configuration"));
+
 	GtkWidget *show_scaling_item = gtk_check_menu_item_new_with_label(_("Show \"Scaling mode \" option"));
 	GtkWidget *about_item = gtk_menu_item_new_with_label(_("About"));
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), reload_item);
+	gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), exit_item);
+
+	gtk_menu_shell_append(GTK_MENU_SHELL(tools_menu), gammabrightness_item);
 	//gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), gtk_separator_menu_item_new());
-	//gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), add_resolution_item);
+	gtk_menu_shell_append(GTK_MENU_SHELL(tools_menu), add_resolution_item);
+
 	gtk_menu_shell_append(GTK_MENU_SHELL(view_menu), show_scaling_item);
 	gtk_menu_shell_append(GTK_MENU_SHELL(help_menu), about_item);
 
 	GtkWidget *file_item = gtk_menu_item_new_with_label(_("File"));
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), file_menu);
+	GtkWidget *tools_item = gtk_menu_item_new_with_label(_("Tools"));
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(tools_item), tools_menu);
 	GtkWidget *view_item = gtk_menu_item_new_with_label(_("View"));
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(view_item), view_menu);
 	GtkWidget *help_item = gtk_menu_item_new_with_label(_("Help"));
@@ -463,19 +660,19 @@ void create_window(void)
 
 	if (nocsd == 0)
 	{
-
 		GtkWidget *mainbutton = gtk_menu_button_new();
 		GtkWidget *image = gtk_image_new_from_icon_name("video-display", GTK_ICON_SIZE_BUTTON);
 		gtk_container_add(GTK_CONTAINER(mainbutton), image);
 
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), file_item);
+		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), tools_item);
 		//gtk_menu_shell_append(GTK_MENU_SHELL(submenu), view_item);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), help_item);
-		
+
 		gtk_menu_button_set_popup(GTK_MENU_BUTTON(mainbutton), submenu);
 		gtk_header_bar_pack_start(GTK_HEADER_BAR(headerbar), mainbutton);
 		gtk_window_set_titlebar(GTK_WINDOW(window), headerbar);
-		
+
 		gtk_widget_show_all(submenu);
 		gtk_widget_show_all(headerbar);
 	}
@@ -483,9 +680,10 @@ void create_window(void)
 	{
 
 		gtk_menu_shell_append(GTK_MENU_SHELL(menubar), file_item);
+		gtk_menu_shell_append(GTK_MENU_SHELL(menubar), tools_item);
 		//gtk_menu_shell_append(GTK_MENU_SHELL(menubar), view_item);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menubar), help_item);
-		
+
 		gtk_box_pack_start(GTK_BOX(confbox), menubar, FALSE, FALSE, 0);
 		gtk_widget_show_all(menubar);
 	}
@@ -514,9 +712,6 @@ void create_window(void)
 	reflcombo = gtk_combo_box_text_new();
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(reflcombo), _("No mirror"));
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(reflcombo), _("Horizontal mirror"));
-		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(reflcombo), _("Vertical Mirror"));
-		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(reflcombo), _("H+V Mirror"));
-
 
 	outcombo = gtk_combo_box_text_new();
 	offon = gtk_combo_box_text_new();
@@ -553,7 +748,7 @@ void create_window(void)
 	outlabel = gtk_label_new(_("Output:"));
 	poslabel = gtk_label_new(_("Position:"));
 
-	defbtn    = gtk_button_new_with_label(_("Default"));
+	defbtn = gtk_button_new_with_label(_("Default"));
 		gtk_widget_set_tooltip_text(defbtn, "Ctrl+D");
 	applybtn  = gtk_button_new_with_label(_("Apply"));
 		gtk_widget_set_tooltip_text(applybtn, "Ctrl+Return");
@@ -588,13 +783,11 @@ void create_window(void)
 	}
 	free(resolutions);
 
-
-
 	gchar *current_resolution = get_display_resolution(ctx, current_output);
 	g_custom_message("[OUTPUTMANAGER]:", "Current resolution: %s | %s", current_output, current_resolution);
-	
+
 	if (current_resolution)
-	{ 
+	{
 		combobox_match(GTK_COMBO_BOX_TEXT(rescombo), current_resolution);
 		g_free(current_resolution);
 	}
@@ -608,9 +801,24 @@ void create_window(void)
 	}
 
 	update_ui(window, 0);
+
 	//Items Grid position
-	gtk_grid_attach(GTK_GRID(grid), displayname_label, 0, 0, 2, 1);
-	gtk_grid_attach(GTK_GRID(grid), primarybtn, 2, 0, 1, 1);
+	guint dls = (outmode == 0) ? 2 : 3;
+	gtk_grid_attach(GTK_GRID(grid), displayname_label, 0, 0, dls, 1);
+	if (outmode == 0)
+	{
+		gtk_grid_attach(GTK_GRID(grid), primarybtn, 2, 0, 1, 1);
+		gtk_widget_set_sensitive(add_resolution_item, FALSE);
+		gtk_widget_set_visible(add_resolution_item, FALSE);
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(reflcombo), _("Vertical Mirror"));
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(reflcombo), _("H+V Mirror"));
+	}
+	else
+	{
+		gtk_widget_set_sensitive(gammabrightness_item, FALSE);
+		gtk_widget_set_visible(gammabrightness_item, FALSE);
+	}
+
 	gtk_grid_attach(GTK_GRID(grid), outlabel, 0, 1, 1, 1);
 	gtk_grid_attach(GTK_GRID(grid), outcombo, 1, 1, 1, 1);
 	gtk_grid_attach(GTK_GRID(grid), offon, 2, 1, 1, 1);
@@ -624,7 +832,7 @@ void create_window(void)
 
 	gtk_grid_attach(GTK_GRID(grid), gtk_label_new(_("Rotation:")), 0, 5, 1, 1);
 	gtk_grid_attach(GTK_GRID(grid), rotcombo, 1, 5, 1, 1);
-	gtk_grid_attach(GTK_GRID(grid), reflcombo, 2, 5, 1, 1);
+		gtk_grid_attach(GTK_GRID(grid), reflcombo, 2, 5, 1, 1);
 
 	gtk_grid_attach(GTK_GRID(grid), gtk_label_new(_("Scale (%):")), 0, 7, 1, 1);
 	gtk_grid_attach(GTK_GRID(grid), slider,   1, 7, 2, 1);
@@ -660,6 +868,7 @@ void create_window(void)
 		// Connect the submenu items to the callback function
 	g_signal_connect(reload_item, "activate", G_CALLBACK(update_ui), GINT_TO_POINTER(2));
 	g_signal_connect(add_resolution_item, "activate", G_CALLBACK(on_add_resolution_clicked), NULL);
+	g_signal_connect(gammabrightness_item, "activate", G_CALLBACK(gammabrighness_dialog), NULL);
 	g_signal_connect(about_item, "activate", G_CALLBACK(show_about), NULL);
 
 	if (nocsd == 1)
@@ -667,6 +876,7 @@ void create_window(void)
 		g_signal_connect(window, "button-press-event", G_CALLBACK(on_button_press), submenu);
 	}
 	gtk_widget_add_accelerator(add_resolution_item, "activate", accel_group, GDK_KEY_N, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(gammabrightness_item, "activate", accel_group, GDK_KEY_B, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 	gtk_widget_add_accelerator(save_config_item, "activate", accel_group, GDK_KEY_S, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 	gtk_widget_add_accelerator(reload_item, "activate", accel_group, GDK_KEY_R, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 

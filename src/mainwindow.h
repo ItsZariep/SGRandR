@@ -8,6 +8,7 @@
 
 #include "outputmanager.h"
 #include "events.h"
+#include "customresolutions.h"
 
 //locale data
 #define _(String) gettext(String)
@@ -16,6 +17,8 @@
 
 extern gint testmode;
 extern gint nocsd;
+
+
 
 //logic data
 extern gchar **resolutions;

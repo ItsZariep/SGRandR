@@ -33,6 +33,8 @@
 	
 #endif
 
+extern guint outmode;
+
 DisplayContext *create_display_context(void);
 void free_display_context(DisplayContext *ctx);
 void setresolution(guint screenx, guint screeny, gdouble rrate, gchar *target,

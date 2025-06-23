@@ -1,29 +1,49 @@
 # SGRandR
 
-Simple GTK xrandr-gui
+Simple GTK Display settings
 
 >[NOTE]
-> The wlroots backend is in progress, please be patient.
+> The wlroots backend is in progress, please be patient or use `nolibs` backend
 
-## TO DO: 
+## Features:
 
-- [x] Get a List of Resolutions and change the display resolution
-- [x] Get a List of Refresh Rates and change display refresh rate 
-- [x] Change Refresh Rate list dynamically 
-- [x] Button to change Rotation of display
-- [x] Slider to change scale of display
-- [x] Get a List of output and on/off selected output
+- [x] Change Resolution, Refresh rate, Rotation, Reflection, Scale and On/Off state
+- [x] Change Resolutions, Refresh Rates list dynamically
 - [x] Change Position of Display if there is more than one display
-- [x] Hide Output / Position options if there is only one output
 - [ ] Custom Resolution Creator
 
-- [x] Change the list of Resolutions dynamically
-
-## Build 
+## Build
 
 x11:
 ```
 make x11
 ```
 
-standalone GUI for xrandr, with options to Resolutions, Refresh rate, rotate, scale. on/off output and add custom resolutions
+> This build requires X11/Xrandr headers
+
+nolibs (using `xrandr`/`wlr-randr` commands):
+```
+make x11
+```
+
+> This build requires:
+> - X11
+>     - [`xrandr`](https://gitlab.freedesktop.org/xorg/app/xrandr) - Core functionality
+>     - [`libdisplayinfo`](https://gitlab.freedesktop.org/emersion/libdisplay-info) (Optional) - Show output name 
+> - Wayland
+>     - [`wlr-randr`](https://sr.ht/~emersion/wlr-randr/) - Core functionality
+
+## Backend differences
+
+### X11
+- Uses libxrandr
+
+### Wayland (Not implemented)
+- Will use wlr-output-management-unstable-v1
+
+### Nolibs
+- Uses and parses shell commands
+- Is slower than other backend
+- Cannot fetch all information
+
+Standalone GUI for xrandr/wlr-randr

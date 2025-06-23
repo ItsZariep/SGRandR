@@ -1,6 +1,8 @@
 #include "events.h"
 
 guint verbose = 0;
+guint outmode = 0;
+guint godefault = 0;
 
 void custom_log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data)
 {

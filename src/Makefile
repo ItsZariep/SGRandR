@@ -5,16 +5,15 @@ PREFIX ?= /usr/local
 BINDIR = $(PREFIX)/bin
 DESKTOPDIR = $(PREFIX)/share/applications
 
-
 BASE_SRC = events.c mainwindow.c sgrandr.c
 
 GTK_CFLAGS = `pkg-config --cflags gtk+-3.0`
 GTK_LIBS = `pkg-config --libs gtk+-3.0`
 
 # X11 target
-SRC_X11 = $(BASE_SRC) outputmanager-x11.c
+SRC_X11 = $(BASE_SRC) outputmanager-x11.c customresolutions-x11.c
 OBJ_X11 = $(SRC_X11:.c=.x11.o)
-CFLAGS_X11 = $(GTK_CFLAGS) -DX11 -Dpver=\"$(VERSION)\"
+CFLAGS_X11 = $(GTK_CFLAGS) -DX11 -Dpver=\"$(VERSION)\" -Wall -pedantic
 LIBS_X11 = $(GTK_LIBS) -lX11 -lXrandr
 
 # Wayland target
@@ -24,7 +23,7 @@ CFLAGS_WAYLAND = $(GTK_CFLAGS) -Dwayland -Dpver=\"$(VERSION)\"
 LIBS_WAYLAND = $(GTK_LIBS)
 
 # Nolibs target
-SRC_NOLIBS = $(BASE_SRC) outputmanager-nolibs.c
+SRC_NOLIBS = $(BASE_SRC) outputmanager-nolibs.c customresolutions-nolibs.c
 OBJ_NOLIBS = $(SRC_NOLIBS:.c=.nolibs.o)
 CFLAGS_NOLIBS = $(GTK_CFLAGS) -Dnolibs -Dpver=\"$(VERSION)\"
 LIBS_NOLIBS = $(GTK_LIBS)
@@ -58,7 +57,7 @@ debug-nolibs: $(SRC_NOLIBS)
 
 
 test:
-	./$(EXE) --verbose
+	./$(EXE)-nolibs --verbose
 
 clean:
 	rm -f *.o *.x11.o *.wayland.o *.nolibs.o $(EXE)-x11 $(EXE)-wayland $(EXE)-nolibs debug
